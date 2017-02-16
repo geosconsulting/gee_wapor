@@ -143,8 +143,11 @@ def retry_if_ee_error(exception):
 
 
 @retrying.retry(retry_on_exception=retry_if_ee_error, wait_exponential_multiplier=1000, wait_exponential_max=4000, stop_max_attempt_number=3)
-def __upload_to_gcs_and_start_ingestion_task(asset_full_path, google_session, image_path, properties,
-                                             multipart_upload, nodata_value):
+def __upload_to_gcs_and_start_ingestion_task(asset_full_path, 
+                                             google_session, 
+                                             image_path, properties,
+                                             multipart_upload, 
+                                             nodata_value):
     asset_request = __upload_file(session=google_session,
                                   file_path=image_path,
                                   asset_name=asset_full_path,

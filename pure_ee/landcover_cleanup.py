@@ -10,7 +10,7 @@ import ee.mapclient
 
 ee.Initialize()
 
-
+ee.mapclient.centerMap(-113.41842, 40.055489, 6)
 # Force projection of 500 meters/pixel, which is the native MODIS resolution.
 VECTORIZATION_SCALE = 500
 
@@ -42,4 +42,4 @@ ee.mapclient.addToMap(image4, vis_params, 'Mode')
 ee.mapclient.addToMap(image5, vis_params, 'Smooth')
 ee.mapclient.addToMap(image6, vis_params, 'Smooth')
 
-ee.mapclient.centerMap(-113.41842, 40.055489, 6)
+
