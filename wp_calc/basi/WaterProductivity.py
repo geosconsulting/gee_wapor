@@ -20,7 +20,8 @@ bande = rasterSeason1.bandNames()
 bande.getInfo()
 
 region = [[-25.0, -37.0], [60.0, -41.0],
-          [58.0, 39.0], [-31.0, 38.0], [-25.0, -37.0]]
+          [58.0, 39.0], [-31.0, 38.0],
+          [-25.0, -37.0]]
 # print(type(L1_AGBPSeasonals.toList(100).getInfo()))
 
 # Above Ground Biomass Production with masked NoData (pixel < 0)
