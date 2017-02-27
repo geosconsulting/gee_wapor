@@ -1,6 +1,6 @@
 import argparse
 import datetime
-# import sys
+import sys
 
 from wpCalc import L1WaterProductivity
 
@@ -56,38 +56,43 @@ def main(args=None):
     results = parser.parse_args()
     print(results)
 
-    elaborazione = L1WaterProductivity()
+    # elaborazione = L1WaterProductivity()
 
-    if results.annual:
-        if results.chart:
-            abpm, aet = elaborazione.image_selection_annual()
-            L1_AGBP_summed, ETaColl3, WPbm = elaborazione.image_processing(abpm,aet)
-            elaborazione.image_visualization('c',
-                                             L1_AGBP_summed,
-                                             ETaColl3,
-                                             WPbm)
+    if results.verbose:
+        if results.annual:
+            if results.chart:
+                print("Water productivy will be calculated for "
+                      "year {} and shown as chart ".format(results.annual))
+            else:
+                print("Water productivy will be calculated for "
+                      "year {} and shown as map ".format(results.annual))
         else:
-            abpm, aet = elaborazione.image_selection_annual()
-            L1_AGBP_summed, ETaColl3, WPbm = elaborazione.image_processing(abpm,aet)
-            elaborazione.image_visualization('m',
-                                             L1_AGBP_summed,
-                                             ETaColl3,
-                                             WPbm)
+            if results.chart:
+                print("Water productivy will be calculated between {} e {} "
+                      "and shown as chart".format(results.dekadal[0],
+                                                  results.dekadal[1]))
+
+            else:
+                print("Water productivy will be calculated between {} e {} "
+                      "and shown as map".format(results.dekadal[0],
+                                                results.dekadal[1]))
     else:
-        abpm, aet = elaborazione.image_selection(results.dekadal[0],
-                                                 results.dekadal[1])
-        L1_AGBP_summed, ETaColl3, WPbm = elaborazione.image_processing(abpm,
-                                                                       aet)
-        if results.chart:
-            elaborazione.image_visualization('c',
-                                             L1_AGBP_summed,
-                                             ETaColl3,
-                                             WPbm)
+        if results.annual:
+            if results.chart:
+                print("Water productivy year {} as "
+                      "chart ".format(results.annual))
+            else:
+                print("Water productivy year {} as "
+                      "map ".format(results.annual))
         else:
-            elaborazione.image_visualization('m',
-                                             L1_AGBP_summed,
-                                             ETaColl3,
-                                             WPbm)
+            if results.chart:
+                print("Water productivy between {} e {} as "
+                      "chart".format(results.dekadal[0],
+                                     results.dekadal[1]))
+            else:
+                print("Water productivy between {} e {} as map".format(
+                    results.dekadal[0],
+                    results.dekadal[1]))
 
 
 if __name__ == '__main__':

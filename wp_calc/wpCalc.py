@@ -1,7 +1,11 @@
 # coding: utf-8
-import ee
+import ee, time 
 import ee.mapclient
 import matplotlib.pyplot as plt
+import sys
+from osgeo import ogr
+import os
+import glob
 
 
 class WaterProductivityCalc():
@@ -28,7 +32,7 @@ class L1WaterProductivity(WaterProductivityCalc):
                              "palette": "f4ffd9,c8ef7e,87b332,566e1b",
                              "region": self.region}
 
-        self.VisPar_ETay = {"opacity": 0.85, "bands": "b1",
+        self.VisPar_ETay = {"opacity": 1, "bands": "b1",
                             "min": 0, "max": 2000,
                             "palette": "d4ffc6,beffed,79c1ff,3e539f",
                             "region": self.region}
@@ -36,7 +40,7 @@ class L1WaterProductivity(WaterProductivityCalc):
         self.VisPar_WPbm = {"opacity": 0.85, "bands": "b1",
                             "min": 0, "max": 1.2,
                             "palette": "bc170f,e97a1a,fff83a,9bff40,5cb326",
-                            "region": self.region}
+                            "region": self.region}        
 
         self.L1_AGBP_dekadal = ee.ImageCollection(
             "projects/fao-wapor/L1_AGBP250")
@@ -48,12 +52,6 @@ class L1WaterProductivity(WaterProductivityCalc):
             "users/lpeiserfao/AET250")
 
     def image_selection(self, start_date, end_date):
-
-        # data_start = datetime.datetime(start_date)
-        # data_end = datetime.datetime(end_date)
-
-        #data_start = str(start_date).replace('-', ',')
-        #data_end = str(end_date).replace('-', ',')
 
         data_start = str(start_date)
         data_end = str(end_date)
@@ -83,18 +81,18 @@ class L1WaterProductivity(WaterProductivityCalc):
 
         # Actual Evapotranspiration with valid ETa values (>0 and <254)
         ETaColl1 = L1_AET_calc.map(
-            lambda immagine: immagine.updateMask
-            (immagine.lt(254) and (immagine.gt(0))))
+            lambda imm_eta: imm_eta.updateMask
+            (imm_eta.lt(254) and (imm_eta.gt(0))))
 
         # add image property (days in dekad) as band
         ETaColl2 = ETaColl1.map(
-            lambda immagine: immagine.addBands(immagine.metadata(
+            lambda imm_eta2: imm_eta2.addBands(imm_eta2.metadata(
                                                'days_in_dk')))
 
         # get ET value, divide by 10 (as per FRAME spec) to get daily
         # value, and  multiply by number of days in dekad summed annuallyS
-        ETaColl3 = ETaColl2.map(lambda immagine: immagine.select(
-            'b1').divide(10).multiply(immagine.select('days_in_dk'))).sum()
+        ETaColl3 = ETaColl2.map(lambda imm_eta3: imm_eta3.select(
+            'b1').divide(10).multiply(imm_eta3.select('days_in_dk'))).sum()
 
         # scale ETsum from mm/m² to m³/ha for WP calculation purposes
         ETaTotm3 = ETaColl3.multiply(10)
@@ -138,4 +136,60 @@ class L1WaterProductivity(WaterProductivityCalc):
             ax3.imshow(thumb_imag_WPbm)
             ax3.set_title('WP')
             ax3.axis('off')
+
             plt.show()
+
+    def image_export(self, exp_type, WPbm):
+
+
+        driver = ogr.GetDriverByName('ESRI Shapefile')
+        
+        dir_shps = "/media/sf_Fabio/Downloads/water productivity/data/tiles/tiles5"
+        os.chdir(dir_shps)
+        file_shps = glob.glob("*.shp")
+        
+        for file_shp in file_shps:
+            dataSource = driver.Open(file_shp, 0) 
+            if dataSource is None:
+                 sys.exit(('Could not open {0}.'.format(file_shp)))
+            else:            
+                layer = dataSource.GetLayer(0)
+                extent = layer.GetExtent()
+                nome_file = str(file_shp.split('.')[0])
+                primo = extent[0],extent[3]
+                secondo = extent[0],extent[2]
+                terzo = extent[1],extent[2]          
+                quarto = extent[1],extent[3]
+                
+                cut = []
+                cut.append(list(primo))
+                cut.append(list(secondo))
+                cut.append(list(terzo))
+                cut.append(list(quarto))               
+                
+                Export_WPbm = {                   
+                       "crs": "EPSG:4326",
+                       "scale": 250,                   
+                       'region': cut}     
+    
+                if exp_type == 'u':
+                    try:
+                        url_WPbm = WPbm.getDownloadUrl(Export_WPbm)
+                        print(url_WPbm)
+                    except:
+                        print("Unexpected error:", sys.exc_info()[0])
+                        raise
+                elif exp_type == 'd':        
+                    task = ee.batch.Export.image(WPbm,
+                                                 nome_file,
+                                                 Export_WPbm)
+                    task.start()
+                    while task.status()['state'] == 'RUNNING':
+                        print 'Running...'
+                        # Perhaps task.cancel() at some point.
+                        time.sleep(1)
+                    print 'Done.', task.status()
+                elif exp_type == 'a':
+                    pass
+                elif exp_type == 'g':
+                    pass
