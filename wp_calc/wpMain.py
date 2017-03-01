@@ -57,40 +57,42 @@ def main(args=None):
                         help="Choose export to url(-u), drive (-d), "
                              " asset (-t) or geoserver (-g)")
 
-    parser.add_argument('-r', '--resources', choices=['aet', 'agbp', 'npp', 'pcp', 'ret'],
-                        help="Specify input datasets e.g. agbp=npp * 1.25 if not " 
-                             "provided default datasets ll be used instead",
-                             )
+    parser.add_argument('-s', '--switch', type=float,
+                        help="Replace the Above Ground Biomass Production with Net Primary Productivity multiplied "
+                             "by a constant value. Sending -s 1.25 will set agbp=npp * 1.25. If not provided default "
+                             "datasets will be used instead")
 
     results = parser.parse_args()
     print(results)
 
     elaborazione = L1WaterProductivity()
 
+    if results.switch:
+        moltiplicatore = results.switch
+        elaborazione.multi_agbp = moltiplicatore
+        abpmmmm = elaborazione.multi_agbp
+
     if results.annual:
         if results.chart:
-
             abpm, aet = elaborazione.image_selection_annual()
 
             L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
-            
 
             elaborazione.image_visualization('c',
                                              L1_AGBP_summed,
-                                             ETaColl1,
-                                             ETaColl2,
                                              ETaColl3,
                                              WPbm)
-        else:
-            
+        elif results.map:
             abpm, aet = elaborazione.image_selection_annual()
             L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
             elaborazione.image_visualization('m',
                                              L1_AGBP_summed,
-                                             ETaColl1,
-                                             ETaColl2,
                                              ETaColl3,
                                              WPbm)
+        else:
+            abpm, aet = elaborazione.image_selection_annual()
+            L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
+
     else:
         abpm, aet = elaborazione.image_selection(results.dekadal[0],
                                                  results.dekadal[1])
@@ -98,15 +100,11 @@ def main(args=None):
         if results.chart:
             elaborazione.image_visualization('c',
                                              L1_AGBP_summed,
-                                             ETaColl1,
-                                             ETaColl2,
                                              ETaColl3,
                                              WPbm)
-        else:
+        elif results.map:
             elaborazione.image_visualization('m',
                                              L1_AGBP_summed,
-                                             ETaColl1,
-                                             ETaColl2,
                                              ETaColl3,
                                              WPbm)
 

@@ -9,62 +9,58 @@ import os
 import glob
 
 
-class WaterProductivityCalc():
+class WaterProductivityCalc(object):
 
     def __init__(self):
         pass
-
 
 class L1WaterProductivity(WaterProductivityCalc):
 
     def __init__(self):
 
-        ee.Initialize()          
-                    
-        #self.map_view = ee.mapclient   
+        ee.Initialize()
 
-        self.region = [[-25.0, -37.0], [60.0, -41.0],
-                       [58.0, 39.0], [-31.0, 38.0],
-                       [-25.0, -37.0]]
+        self._REGION = [[-25.0, -37.0], [60.0, -41.0], [58.0, 39.0], [-31.0, 38.0],  [-25.0, -37.0]]
         
-        self.L1_AGBP_seasonal = ee.ImageCollection(
-            "projects/fao-wapor/L1_AGBP")
-        
-        self.L1_AGBP_dekadal = ee.ImageCollection(
-            "projects/fao-wapor/L1_AGBP250")
-
-        self.L1_ETa_dekadal = ee.ImageCollection(
-            "projects/fao-wapor/L1_AET")
-
-        self.L1_AET250 = ee.ImageCollection(
-            "users/lpeiserfao/AET250")
+        self._L1_AGBP_SEASONAL = ee.ImageCollection("projects/fao-wapor/L1_AGBP")
+        self._L1_AGBP_DEKADAL = ee.ImageCollection("projects/fao-wapor/L1_AGBP250")
+        self._L1_ETa_DEKADAL = ee.ImageCollection("projects/fao-wapor/L1_AET")
+        self._L1_AET250 = ee.ImageCollection("users/lpeiserfao/AET250")
         
         self.VisPar_AGBPy = {"opacity": 0.85, "bands": "b1",
                              "min": 0, "max": 12000,
                              "palette": "f4ffd9,c8ef7e,87b332,566e1b",
-                             "region": self.region}
+                             "region": self._REGION}
 
         self.VisPar_ETay = {"opacity": 1, "bands": "b1",
                             "min": 0, "max": 2000,
                             "palette": "d4ffc6,beffed,79c1ff,3e539f",
-                            "region": self.region}
+                            "region": self._REGION}
 
         self.VisPar_WPbm = {"opacity": 0.85, "bands": "b1",
                             "min": 0, "max": 1.2,
                             "palette": "bc170f,e97a1a,fff83a,9bff40,5cb326",
-                            "region": self.region}
+                            "region": self._REGION}
 
+    @property
+    def multi_agbp(self):
+        return self._L1_AGBP_DEKADAL
+
+    @multi_agbp.setter
+    def multi_agbp(self, value):
+        return self._L1_AGBP_DEKADAL.map(
+               lambda immagine: immagine.multiply(value))
 
     def image_selection(self, start_date, end_date):
 
         data_start = str(start_date)
         data_end = str(end_date)
 
-        collAGBPFiltered = self.L1_AGBP_dekadal.filterDate(
+        collAGBPFiltered = self._L1_AGBP_DEKADAL.filterDate(
             data_start,
             data_end)
 
-        collAETFiltered = self.L1_AET250.filterDate(
+        collAETFiltered = self._L1_AET250.filterDate(
             data_start,
             data_end)
 
@@ -72,7 +68,7 @@ class L1WaterProductivity(WaterProductivityCalc):
 
     def image_selection_annual(self):
 
-        return self.L1_AGBP_seasonal, self.L1_AET250
+        return self._L1_AGBP_SEASONAL, self._L1_AET250
 
     def image_processing(self, L1_AGBP_calc, L1_AET_calc):
 
@@ -106,23 +102,17 @@ class L1WaterProductivity(WaterProductivityCalc):
 
         return L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm
 
-    def image_visualization(self, viz_type, L1_AGBP,
-                            ETaColl1, ETaColl2, ETaColl3, WPbm):
+    def image_visualization(self, viz_type, L1_AGBP, ETaColl3, WPbm):
 
         if viz_type == 'm':
 
-            mc.addToMap(WPbm,
-                              self.VisPar_WPbm,
-                              'Annual biomass water productivity')            
+            mc.addToMap(WPbm, self.VisPar_WPbm, 'Annual biomass water productivity')
             mc.centerMap(17.75, 10.14, 4)
 
         elif viz_type == 'c':
 
             url_thumb_AGBP = L1_AGBP.getThumbUrl(self.VisPar_AGBPy)
-            thumb_imag_AGBP = plt.imread(url_thumb_AGBP)          
-            
-            # map_image = L1_AGBP.getMapId(self.VisPar_AGBPy)
-            # print(dir(map_image))
+            thumb_imag_AGBP = plt.imread(url_thumb_AGBP)
 
             url_thumb_ETaColl3 = ETaColl3.getThumbUrl(self.VisPar_ETay)
             thumb_imag_ETaColl3 = plt.imread(url_thumb_ETaColl3)
@@ -133,7 +123,6 @@ class L1WaterProductivity(WaterProductivityCalc):
             fig = plt.figure()
             ax1 = fig.add_subplot(2, 2, 1)
             ax1.imshow(thumb_imag_AGBP)
-            # imgplot = ax1.imshow(thumb_imag_AGBP)
             ax1.set_title('AGBP')
             ax1.axis('off')
 
