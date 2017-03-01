@@ -53,9 +53,14 @@ def main(args=None):
                                    " on Google Map",
                               action="store_true")
 
-    parser.add_argument('-e', '--export', choices=['u', 'd', 'a','g'],
+    parser.add_argument('-e', '--export', choices=['u', 'd', 'a', 'g', 'n'],
                         help="Choose export to url(-u), drive (-d), "
                              " asset (-t) or geoserver (-g)")
+
+    parser.add_argument('-r', '--resources', choices=['aet', 'agbp', 'npp', 'pcp', 'ret'],
+                        help="Specify input datasets e.g. agbp=npp * 1.25 if not " 
+                             "provided default datasets ll be used instead",
+                             )
 
     results = parser.parse_args()
     print(results)
@@ -64,34 +69,44 @@ def main(args=None):
 
     if results.annual:
         if results.chart:
+
             abpm, aet = elaborazione.image_selection_annual()
-            L1_AGBP_summed, ETaColl3, WPbm = elaborazione.image_processing(
-                abpm, aet)
+
+            L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
+            
+
             elaborazione.image_visualization('c',
                                              L1_AGBP_summed,
+                                             ETaColl1,
+                                             ETaColl2,
                                              ETaColl3,
                                              WPbm)
         else:
+            
             abpm, aet = elaborazione.image_selection_annual()
-            L1_AGBP_summed, ETaColl3, WPbm = elaborazione.image_processing(
-                abpm, aet)
+            L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
             elaborazione.image_visualization('m',
                                              L1_AGBP_summed,
+                                             ETaColl1,
+                                             ETaColl2,
                                              ETaColl3,
                                              WPbm)
     else:
         abpm, aet = elaborazione.image_selection(results.dekadal[0],
                                                  results.dekadal[1])
-        L1_AGBP_summed, ETaColl3, WPbm = elaborazione.image_processing(abpm,
-                                                                       aet)
+        L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
         if results.chart:
             elaborazione.image_visualization('c',
                                              L1_AGBP_summed,
+                                             ETaColl1,
+                                             ETaColl2,
                                              ETaColl3,
                                              WPbm)
         else:
             elaborazione.image_visualization('m',
                                              L1_AGBP_summed,
+                                             ETaColl1,
+                                             ETaColl2,
                                              ETaColl3,
                                              WPbm)
 
