@@ -67,26 +67,46 @@ def main(args=None):
 
     elaborazione = L1WaterProductivity()
 
-    if results.annual:
-        abpm, aet = elaborazione.image_selection
-    else:
-        date_v = [results.dekadal[0], results.dekadal[1]]
-        elaborazione.image_selection = date_v
-        abpm, aet = elaborazione.image_selection
-
     if results.switch:
         moltiplicatore = results.switch
         elaborazione.multi_agbp = moltiplicatore
-        abpm = elaborazione.multi_agbp
+        abpmmmm = elaborazione.multi_agbp
 
-    L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
+    if results.annual:
+        if results.chart:
+            abpm, aet = elaborazione.image_selection_annual()
 
-    if results.chart:
-        elaborazione.image_visualization('c', L1_AGBP_summed, ETaColl3, WPbm)
-    elif results.map:
-        elaborazione.image_visualization('m', L1_AGBP_summed, ETaColl3, WPbm)
+            L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
+
+            elaborazione.image_visualization('c',
+                                             L1_AGBP_summed,
+                                             ETaColl3,
+                                             WPbm)
+        elif results.map:
+            abpm, aet = elaborazione.image_selection_annual()
+            L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
+            elaborazione.image_visualization('m',
+                                             L1_AGBP_summed,
+                                             ETaColl3,
+                                             WPbm)
+        else:
+            abpm, aet = elaborazione.image_selection_annual()
+            L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
+
     else:
-        pass
+        abpm, aet = elaborazione.image_selection(results.dekadal[0],
+                                                 results.dekadal[1])
+        L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
+        if results.chart:
+            elaborazione.image_visualization('c',
+                                             L1_AGBP_summed,
+                                             ETaColl3,
+                                             WPbm)
+        elif results.map:
+            elaborazione.image_visualization('m',
+                                             L1_AGBP_summed,
+                                             ETaColl3,
+                                             WPbm)
 
     elaborazione.image_export(results.export, WPbm)
 

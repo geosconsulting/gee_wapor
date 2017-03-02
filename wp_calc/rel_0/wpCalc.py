@@ -21,15 +21,11 @@ class L1WaterProductivity(WaterProductivityCalc):
         ee.Initialize()
 
         self._REGION = [[-25.0, -37.0], [60.0, -41.0], [58.0, 39.0], [-31.0, 38.0],  [-25.0, -37.0]]
-
+        
         self._L1_AGBP_SEASONAL = ee.ImageCollection("projects/fao-wapor/L1_AGBP")
         self._L1_AGBP_DEKADAL = ee.ImageCollection("projects/fao-wapor/L1_AGBP250")
         self._L1_ETa_DEKADAL = ee.ImageCollection("projects/fao-wapor/L1_AET")
         self._L1_AET250 = ee.ImageCollection("users/lpeiserfao/AET250")
-        self._L1_NPP_DEKADAL = ee.ImageCollection("projects/fao-wapor/L1_NPP250")
-
-        self.l1_AGBP_calc = self._L1_AGBP_SEASONAL
-        self.l1_AET250_calc = self._L1_AET250
         
         self.VisPar_AGBPy = {"opacity": 0.85, "bands": "b1",
                              "min": 0, "max": 12000,
@@ -47,23 +43,18 @@ class L1WaterProductivity(WaterProductivityCalc):
                             "region": self._REGION}
 
     @property
-    def multiply_npp(self):
+    def multi_agbp(self):
         return self._L1_AGBP_DEKADAL
 
-    @multiply_npp.setter
-    def multiply_npp(self, value):
-        self.l1_AET250_calc = self._L1_NPP_DEKADAL.map(
-            lambda immagine: immagine.multiply(value))
+    @multi_agbp.setter
+    def multi_agbp(self, value):
+        return self._L1_AGBP_DEKADAL.map(
+               lambda immagine: immagine.multiply(value))
 
-    @property
-    def image_selection(self):
-        return self.l1_AGBP_calc, self.l1_AET250_calc
+    def image_selection(self, start_date, end_date):
 
-    @image_selection.setter
-    def image_selection(self, date_p):
-
-        data_start = str(date_p[0])
-        data_end = str(date_p[1])
+        data_start = str(start_date)
+        data_end = str(end_date)
 
         collAGBPFiltered = self._L1_AGBP_DEKADAL.filterDate(
             data_start,
@@ -73,13 +64,17 @@ class L1WaterProductivity(WaterProductivityCalc):
             data_start,
             data_end)
 
-        self.l1_AGBP_calc = collAGBPFiltered
-        self.l1_AET250_calc = collAETFiltered
+        return collAGBPFiltered, collAETFiltered
+
+    def image_selection_annual(self):
+
+        return self._L1_AGBP_SEASONAL, self._L1_AET250
 
     def image_processing(self, L1_AGBP_calc, L1_AET_calc):
 
         # Above Ground Biomass Production with masked NoData (pixel < 0)
-        L1_AGBP_masked = L1_AGBP_calc.map(lambda lista: lista.updateMask(lista.gte(0)))
+        L1_AGBP_masked = L1_AGBP_calc.map(
+            lambda lista: lista.updateMask(lista.gte(0)))
         # .multiply(10); the multiplier will need to be
         # applied on net FRAME delivery, not on sample dataset
         L1_AGBP_summed = L1_AGBP_masked.sum()       
