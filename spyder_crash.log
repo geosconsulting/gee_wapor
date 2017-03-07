@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "/usr/local/lib/python2.7/dist-packages/spyder/app/mainwindow.py", line 2979, in main
+    mainwindow = run_spyder(app, options, args)
+  File "/usr/local/lib/python2.7/dist-packages/spyder/app/mainwindow.py", line 2893, in run_spyder
+    main.post_visible_setup()
+  File "/usr/local/lib/python2.7/dist-packages/spyder/app/mainwindow.py", line 1238, in post_visible_setup
+    self.editor.setup_open_files()
+  File "/usr/local/lib/python2.7/dist-packages/spyder/plugins/editor.py", line 2628, in setup_open_files
+    self.editorsplitter.set_layout_settings(layout)
+  File "/usr/local/lib/python2.7/dist-packages/spyder/widgets/editor.py", line 2107, in set_layout_settings
+    editorstack.set_current_filename(cfname)
+  File "/usr/local/lib/python2.7/dist-packages/spyder/widgets/editor.py", line 1137, in set_current_filename
+    index = self.has_filename(filename)
+  File "/usr/local/lib/python2.7/dist-packages/spyder/widgets/editor.py", line 1132, in has_filename
+    if fixpath(filename) == fixpath(finfo.filename):
+  File "/usr/local/lib/python2.7/dist-packages/spyder/widgets/editor.py", line 1130, in <lambda>
+    fixpath = lambda path: osp.normcase(osp.realpath(path))
+  File "/usr/lib/python2.7/posixpath.py", line 375, in realpath
+    path, ok = _joinrealpath('', filename, {})
+  File "/usr/lib/python2.7/posixpath.py", line 381, in _joinrealpath
+    if isabs(rest):
+  File "/usr/lib/python2.7/posixpath.py", line 54, in isabs
+    return s.startswith('/')
+AttributeError: 'NoneType' object has no attribute 'startswith'

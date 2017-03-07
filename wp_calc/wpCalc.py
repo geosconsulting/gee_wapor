@@ -1,13 +1,13 @@
 # coding: utf-8
 import ee
 import time
-import ee.mapclient as mc
+import ee.mapclient
 import matplotlib.pyplot as plt
 import sys
 from osgeo import ogr
 import os
 import glob
-
+import datetime
 
 class WaterProductivityCalc(object):
 
@@ -21,6 +21,10 @@ class L1WaterProductivity(WaterProductivityCalc):
         ee.Initialize()
 
         self._REGION = [[-25.0, -37.0], [60.0, -41.0], [58.0, 39.0], [-31.0, 38.0],  [-25.0, -37.0]]
+
+        # VETTORI
+        self.countries = ee.FeatureCollection('ft:1tdSwUL7MVpOauSgRzqVTOwdfy17KDbw-1d9omPw')
+        self.wsheds = ee.FeatureCollection('ft:1IXfrLpTHX4dtdj1LcNXjJADBB-d93rkdJ9acSEWK')
 
         self._L1_AGBP_SEASONAL = ee.ImageCollection("projects/fao-wapor/L1_AGBP")
         self._L1_AGBP_DEKADAL = ee.ImageCollection("projects/fao-wapor/L1_AGBP250")
@@ -82,8 +86,7 @@ class L1WaterProductivity(WaterProductivityCalc):
         L1_AGBP_masked = L1_AGBP_calc.map(lambda lista: lista.updateMask(lista.gte(0)))
         # .multiply(10); the multiplier will need to be
         # applied on net FRAME delivery, not on sample dataset
-        L1_AGBP_summed = L1_AGBP_masked.sum()       
-        
+        L1_AGBP_summed = L1_AGBP_masked.sum()
         
         # Actual Evapotranspiration with valid ETa values (>0 and <254)
         ETaColl1 = L1_AET_calc.map(lambda imm_eta: imm_eta.updateMask
@@ -107,12 +110,67 @@ class L1WaterProductivity(WaterProductivityCalc):
 
         return L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm
 
+    def map_id_getter(self, wpbm_calc):
+        map_id = wpbm_calc.getMapId(self.VisPar_WPbm)
+        return map_id
+
+    def generate_ts(self, paese, data_start, data_end):
+
+        justCountry = self.countries.filter(ee.Filter.eq('Country', paese))
+        cutPoly = justCountry.geometry()
+        cutBoundingBox = cutPoly.bounds(1)
+
+        ETaCollection_filtered = self._L1_ETa_DEKADAL.filterDate(data_start, data_end).filterBounds(cutBoundingBox)
+
+        def getMean(img):
+            return img.reduceRegions(cutBoundingBox,
+                                     ee.Reducer.mean(),
+                                     200)
+
+        ans = ee.FeatureCollection(ETaCollection_filtered.map(getMean)).flatten().aggregate_array('.all').getInfo()
+
+        x_agbp = [x['properties']['mean'] for x in ans]
+        print x_agbp
+        labels_agbp = [x['id'][:8] for x in ans]
+        lables_data = [datetime.datetime.strptime(label, "%Y%m%d").strftime('%Y-%m-%d') for label in labels_agbp]
+
+        plt.plot(x_agbp)
+        plt.xticks(range(len(labels_agbp)), lables_data, rotation=90)
+        plt.show()
+
+    def generate_arealstats(self, paese, data_start, data_end):
+
+        justCountry = self.countries.filter(ee.Filter.eq('Country', paese))
+        cutPoly = justCountry.geometry()
+        cutBoundingBox = cutPoly.bounds(1)
+        # regione_paese = ee.Geometry(cutPoly.getInfo()).toGeoJSONString()
+        # centroid = justCountry.geometry().centroid()
+
+        ETaCollection_filtered = self._L1_ETa_DEKADAL.filterDate(data_start, data_end).filterBounds(cutBoundingBox)
+
+        def getMean(img):
+            return img.reduceRegions(cutBoundingBox,
+                                     ee.Reducer.mean(),
+                                     200)
+
+        ans = ee.FeatureCollection(ETaCollection_filtered.map(getMean)).flatten().aggregate_array('.all').getInfo()
+
+        x_agbp = [x['properties']['mean'] for x in ans]
+        print x_agbp
+        labels_agbp = [x['id'][:8] for x in ans]
+        lables_data = [datetime.datetime.strptime(label, "%Y%m%d").strftime('%Y-%m-%d') for label in labels_agbp]
+
+        plt.plot(x_agbp)
+        plt.xticks(range(len(labels_agbp)), lables_data, rotation=90)
+        plt.show()
+
+
     def image_visualization(self, viz_type, L1_AGBP, ETaColl3, WPbm):
 
         if viz_type == 'm':
 
-            mc.addToMap(WPbm, self.VisPar_WPbm, 'Annual biomass water productivity')
-            mc.centerMap(17.75, 10.14, 4)
+            ee.mapclient.addToMap(WPbm, self.VisPar_WPbm, 'Annual biomass water productivity')
+            ee.mapclient.centerMap(17.75, 10.14, 4)
 
         elif viz_type == 'c':
 
@@ -140,8 +198,7 @@ class L1WaterProductivity(WaterProductivityCalc):
             ax3.imshow(thumb_imag_WPbm)
             ax3.set_title('WPbm')
             ax3.axis('off')
-            
-            # plt.colorbar()
+
             plt.show()
 
     def image_export(self, exp_type, WPbm):

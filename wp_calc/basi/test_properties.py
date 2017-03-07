@@ -69,7 +69,7 @@ elaborazione.multiply_npp
 
 elaborazione.image_selection
 uno, due = elaborazione.image_selection
-print uno, due
+# print uno, due
 print uno.size().getInfo()
 print due.size().getInfo()
 
