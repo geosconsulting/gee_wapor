@@ -35,7 +35,8 @@ class L1WaterProductivity(WaterProductivityCalc):
 
         self.l1_AGBP_calc = self._L1_AGBP_SEASONAL
         self.l1_AET250_calc = self._L1_AET250
-        
+        self.l1_NPP250_calc = self._L1_NPP_DEKADAL
+
         self.VisPar_AGBPy = {"opacity": 0.85, "bands": "b1",
                              "min": 0, "max": 12000,
                              "palette": "f4ffd9,c8ef7e,87b332,566e1b",
@@ -53,12 +54,23 @@ class L1WaterProductivity(WaterProductivityCalc):
 
     @property
     def multiply_npp(self):
-        return self._L1_AGBP_DEKADAL
+        return self.l1_NPP250_calc
 
     @multiply_npp.setter
-    def multiply_npp(self, value):
-        self.l1_AET250_calc = self._L1_NPP_DEKADAL.map(
-            lambda immagine: immagine.multiply(value))
+    def multiply_npp(self, valori_filtro):#, date_p):
+
+        #print value #, date_p
+
+        data_start = str(valori_filtro[1])
+        data_end = str(valori_filtro[2])
+
+        collNPPFiltered = self._L1_AGBP_DEKADAL.filterDate(
+            data_start,
+            data_end)
+        collNPPMultiplied = collNPPFiltered.map(lambda immagini: immagini.multiply(valori_filtro[0]))
+
+        self.l1_NPP250_calc = collNPPMultiplied
+
 
     @property
     def image_selection(self):
@@ -82,6 +94,8 @@ class L1WaterProductivity(WaterProductivityCalc):
         self.l1_AET250_calc = collAETFiltered
 
     def image_processing(self, L1_AGBP_calc, L1_AET_calc):
+
+        print(L1_AGBP_calc, L1_AET_calc)
 
         # Above Ground Biomass Production with masked NoData (pixel < 0)
         L1_AGBP_masked = L1_AGBP_calc.map(lambda lista: lista.updateMask(lista.gte(0)))

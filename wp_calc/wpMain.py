@@ -86,8 +86,10 @@ def main(args=None):
 
     if results.replace:
         moltiplicatore = results.replace
-        elaborazione.multi_agbp = moltiplicatore
-        abpm = elaborazione.multi_agbp
+        filtri = [moltiplicatore, results.dekadal[0], results.dekadal[1]]
+        elaborazione.multiply_npp = filtri
+        abpm = elaborazione.multiply_npp
+        # print illo.size().getInfo()
 
     if results.timeseries:
         elaborazione.generate_ts(results.arealstat, str(results.dekadal[0]), str(results.dekadal[1]), results.timeseries)
