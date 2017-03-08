@@ -8,6 +8,7 @@ from osgeo import ogr
 import os
 import glob
 import datetime
+import seaborn
 
 class WaterProductivityCalc(object):
 
@@ -114,55 +115,56 @@ class L1WaterProductivity(WaterProductivityCalc):
         map_id = wpbm_calc.getMapId(self.VisPar_WPbm)
         return map_id
 
-    def generate_ts(self, paese, data_start, data_end):
+    def generate_ts(self, paese, data_start, data_end,dataset):
+
+        if dataset == 'agbp':
+            collection = self._L1_AGBP_DEKADAL
+        elif dataset == 'eta':
+            collection = self._L1_ETa_DEKADAL
+        elif dataset == 'aet':
+            collection = self._L1_AET250
+        elif dataset == 'npp':
+            collection = self._L1_NPP_DEKADAL
 
         justCountry = self.countries.filter(ee.Filter.eq('Country', paese))
         cutPoly = justCountry.geometry()
         cutBoundingBox = cutPoly.bounds(1)
 
-        ETaCollection_filtered = self._L1_ETa_DEKADAL.filterDate(data_start, data_end).filterBounds(cutBoundingBox)
+        collection_filtered = collection.filterDate(data_start, data_end).filterBounds(cutBoundingBox)
 
         def getMean(img):
             return img.reduceRegions(cutBoundingBox,
                                      ee.Reducer.mean(),
                                      200)
 
-        ans = ee.FeatureCollection(ETaCollection_filtered.map(getMean)).flatten().aggregate_array('.all').getInfo()
+        ans = ee.FeatureCollection(collection_filtered.map(getMean)).flatten().aggregate_array('.all').getInfo()
 
         x_agbp = [x['properties']['mean'] for x in ans]
-        print x_agbp
         labels_agbp = [x['id'][:8] for x in ans]
         lables_data = [datetime.datetime.strptime(label, "%Y%m%d").strftime('%Y-%m-%d') for label in labels_agbp]
 
         plt.plot(x_agbp)
-        plt.xticks(range(len(labels_agbp)), lables_data, rotation=90)
+        plt.title("timeserie")
+        plt.xticks(range(len(labels_agbp)), lables_data, rotation=60)
         plt.show()
 
-    def generate_arealstats(self, paese, data_start, data_end):
+    def generate_arealstats(self, paese, wbpm_calc):
 
         justCountry = self.countries.filter(ee.Filter.eq('Country', paese))
+        raster_tagliato = wbpm_calc.clip(justCountry)
         cutPoly = justCountry.geometry()
         cutBoundingBox = cutPoly.bounds(1)
-        # regione_paese = ee.Geometry(cutPoly.getInfo()).toGeoJSONString()
-        # centroid = justCountry.geometry().centroid()
+        regione_paese = ee.Geometry(cutPoly.getInfo()).toGeoJSONString()
 
-        ETaCollection_filtered = self._L1_ETa_DEKADAL.filterDate(data_start, data_end).filterBounds(cutBoundingBox)
+        scala = wbpm_calc.projection().nominalScale().getInfo()
 
-        def getMean(img):
-            return img.reduceRegions(cutBoundingBox,
-                                     ee.Reducer.mean(),
-                                     200)
-
-        ans = ee.FeatureCollection(ETaCollection_filtered.map(getMean)).flatten().aggregate_array('.all').getInfo()
-
-        x_agbp = [x['properties']['mean'] for x in ans]
-        print x_agbp
-        labels_agbp = [x['id'][:8] for x in ans]
-        lables_data = [datetime.datetime.strptime(label, "%Y%m%d").strftime('%Y-%m-%d') for label in labels_agbp]
-
-        plt.plot(x_agbp)
-        plt.xticks(range(len(labels_agbp)), lables_data, rotation=90)
-        plt.show()
+        country_stats = wbpm_calc.reduceRegion(
+            reducer=ee.Reducer.mean(),
+            geometry=cutPoly,
+            scale=scala,
+            maxPixels=1e9
+        )
+        return country_stats.getInfo()
 
 
     def image_visualization(self, viz_type, L1_AGBP, ETaColl3, WPbm):

@@ -1,7 +1,6 @@
 import argparse
 import datetime
-# import sys
-import json
+from Tkinter import *
 
 from wpCalc import L1WaterProductivity
 
@@ -62,8 +61,9 @@ def main(args=None):
                              "datasets will be used instead")
 
     parser.add_argument('-t', '--timeseries',
-                        #type=basestring,
-                        help="Time Series from data collections stored in GEE for the chose country")
+                        choices=['agbp', 'eta', 'aet', 'npp'],
+                        help="Time Series from data collections stored in GEE for the chosen country/dataset",
+                        default=None)
 
     parser.add_argument('-s', '--arealstat',
                         # type=basestring,
@@ -74,7 +74,6 @@ def main(args=None):
                         action="store_true")
 
     results = parser.parse_args()
-    print(results)
 
     elaborazione = L1WaterProductivity()
 
@@ -91,12 +90,24 @@ def main(args=None):
         abpm = elaborazione.multi_agbp
 
     if results.timeseries:
-        elaborazione.generate_ts(results.timeseries, str(results.dekadal[0]), str(results.dekadal[1]))
-
-    if results.arealstat:
-        elaborazione.generate_arealstats(results.arealstat, results.dekadal[0], results.dekadal[1])
+        elaborazione.generate_ts(results.arealstat, str(results.dekadal[0]), str(results.dekadal[1]), results.timeseries)
 
     L1_AGBP_summed, ETaColl1, ETaColl2, ETaColl3, WPbm = elaborazione.image_processing(abpm, aet)
+
+    if results.arealstat:
+
+        master = Tk()
+
+        media = elaborazione.generate_arealstats(results.arealstat, WPbm)
+        messaggio = "Mean for {} in {} between {} and {} is {}".format(results.arealstat,
+                                                                       'Water productivity',
+                                                                       str(results.dekadal[0]),
+                                                                       str(results.dekadal[1]),
+                                                                       media)
+        w = Message(master, text=messaggio, width=500)
+        w.pack()
+
+        mainloop()
 
     if results.map_id:
         print elaborazione.map_id_getter(WPbm)
@@ -111,4 +122,5 @@ def main(args=None):
     elaborazione.image_export(results.export, WPbm)
 
 if __name__ == '__main__':
+    # python wpMain.py -d 2015-1-1 2015-5-30 -s 'Kenya' -t 'eta'
     main()
