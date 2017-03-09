@@ -57,19 +57,17 @@ class L1WaterProductivity(WaterProductivityCalc):
         return self.l1_NPP250_calc
 
     @multiply_npp.setter
-    def multiply_npp(self, valori_filtro):#, date_p):
-
-        #print value #, date_p
+    def multiply_npp(self, valori_filtro):
 
         data_start = str(valori_filtro[1])
         data_end = str(valori_filtro[2])
 
-        collNPPFiltered = self._L1_AGBP_DEKADAL.filterDate(
+        coll_n_p_p_filtered = self._L1_AGBP_DEKADAL.filterDate(
             data_start,
             data_end)
-        collNPPMultiplied = collNPPFiltered.map(lambda immagini: immagini.multiply(valori_filtro[0]))
+        coll_n_p_p_multiplied = coll_n_p_p_filtered.map(lambda immagini: immagini.multiply(valori_filtro[0]))
 
-        self.l1_NPP250_calc = collNPPMultiplied
+        self.l1_NPP250_calc = coll_n_p_p_multiplied
 
 
     @property
@@ -82,20 +80,18 @@ class L1WaterProductivity(WaterProductivityCalc):
         data_start = str(date_p[0])
         data_end = str(date_p[1])
 
-        collAGBPFiltered = self._L1_AGBP_DEKADAL.filterDate(
+        collection_agbp_filtered = self._L1_AGBP_DEKADAL.filterDate(
             data_start,
             data_end)
 
-        collAETFiltered = self._L1_AET250.filterDate(
+        collection_aet_filtered = self._L1_AET250.filterDate(
             data_start,
             data_end)
 
-        self.l1_AGBP_calc = collAGBPFiltered
-        self.l1_AET250_calc = collAETFiltered
+        self.l1_AGBP_calc = collection_agbp_filtered
+        self.l1_AET250_calc = collection_aet_filtered
 
     def image_processing(self, L1_AGBP_calc, L1_AET_calc):
-
-        print(L1_AGBP_calc, L1_AET_calc)
 
         # Above Ground Biomass Production with masked NoData (pixel < 0)
         L1_AGBP_masked = L1_AGBP_calc.map(lambda lista: lista.updateMask(lista.gte(0)))
@@ -140,14 +136,14 @@ class L1WaterProductivity(WaterProductivityCalc):
         elif dataset == 'npp':
             collection = self._L1_NPP_DEKADAL
 
-        justCountry = self.countries.filter(ee.Filter.eq('Country', paese))
-        cutPoly = justCountry.geometry()
-        cutBoundingBox = cutPoly.bounds(1)
+        just_country = self.countries.filter(ee.Filter.eq('Country', paese))
+        cut_poly = just_country.geometry()
+        cut_bounding_box = cut_poly.bounds(1)
 
-        collection_filtered = collection.filterDate(data_start, data_end).filterBounds(cutBoundingBox)
+        collection_filtered = collection.filterDate(data_start, data_end).filterBounds(cut_bounding_box)
 
         def getMean(img):
-            return img.reduceRegions(cutBoundingBox,
+            return img.reduceRegions(cut_bounding_box,
                                      ee.Reducer.mean(),
                                      200)
 
@@ -162,19 +158,15 @@ class L1WaterProductivity(WaterProductivityCalc):
         plt.xticks(range(len(labels_agbp)), lables_data, rotation=60)
         plt.show()
 
-    def generate_arealstats(self, paese, wbpm_calc):
+    def generate_areal_stats(self, paese, wbpm_calc):
 
-        justCountry = self.countries.filter(ee.Filter.eq('Country', paese))
-        raster_tagliato = wbpm_calc.clip(justCountry)
-        cutPoly = justCountry.geometry()
-        cutBoundingBox = cutPoly.bounds(1)
-        regione_paese = ee.Geometry(cutPoly.getInfo()).toGeoJSONString()
-
+        just_country = self.countries.filter(ee.Filter.eq('Country', paese))
+        cut_poly = just_country.geometry()
         scala = wbpm_calc.projection().nominalScale().getInfo()
 
         country_stats = wbpm_calc.reduceRegion(
             reducer=ee.Reducer.mean(),
-            geometry=cutPoly,
+            geometry=cut_poly,
             scale=scala,
             maxPixels=1e9
         )
@@ -217,13 +209,51 @@ class L1WaterProductivity(WaterProductivityCalc):
 
             plt.show()
 
-    def image_export(self, exp_type, WPbm):
-        
+    def genera_tagli(self):
+
         driver = ogr.GetDriverByName('ESRI Shapefile')
+        dir_shps = "/media/sf_Fabio/Downloads/water productivity/data/tiles/tiles10_touch/tiles"
+        os.chdir(dir_shps)
+        file_shps = glob.glob("*.shp")
 
-        dir_shps = "/media/sf_Fabio/Downloads/water productivity/"
-        "data/tiles/tiles5"
+        allExportWPbm = []
+        nomi_files = []
 
+        for file_shp in file_shps:
+
+            dataSource = driver.Open(file_shp, 0)
+
+            if dataSource is None:
+                sys.exit(('Could not open {0}.'.format(file_shp)))
+            else:
+                layer = dataSource.GetLayer(0)
+                extent = layer.GetExtent()
+                nome_file = "tile_" + str(file_shp.split('.')[0]).split("_")[3]
+                nomi_files.append(nome_file)
+                primo = extent[0], extent[3]
+                secondo = extent[0], extent[2]
+                terzo = extent[1], extent[2]
+                quarto = extent[1], extent[3]
+
+                cut = []
+                cut.append(list(primo))
+                cut.append(list(secondo))
+                cut.append(list(terzo))
+                cut.append(list(quarto))
+
+                Export_WPbm = {
+                    "crs": "EPSG:4326",
+                    "scale": 250,
+                    'region': cut}
+                allExportWPbm.append(Export_WPbm)
+
+        return allExportWPbm, nomi_files
+
+
+    def image_export(self, exp_type, WPbm):
+
+        driver = ogr.GetDriverByName('ESRI Shapefile')
+        dir_shps = "/media/sf_Fabio/Downloads/water productivity/data/tiles/tiles10_touch/tiles"
         os.chdir(dir_shps)
         file_shps = glob.glob("*.shp")
 
@@ -268,10 +298,23 @@ class L1WaterProductivity(WaterProductivityCalc):
                         # Perhaps task.cancel() at some point.
                         time.sleep(1)
                     print 'Done.', task.status()
+
                 elif exp_type == 'a':
-                    pass
+                    nome_file = "tile_" + str(file_shp.split('.')[0]).split("_")[3]
+                    asset_temp = "projects/fao-wapor/testExpPython/JanMar2015/" + nome_file
+                    ee.batch.Export.image.toAsset(
+                        image=WPbm,
+                        description=nome_file,
+                        assetId=asset_temp,
+                        crs="EPSG:4326",
+                        scale= 250,
+                        region=cut
+                        ).start()
+
                 elif exp_type == 'g':
-                    pass
+                    nome_file = "tile_" + str(file_shp.split('.')[0]).split("_")[3]
+                    asset_temp = "projects/fao-wapor/testExpPython/" + nome_file
+                    print nome_file,asset_temp
                 elif exp_type == 'n':
                     print("Nun faccio na minchia")
                     pass

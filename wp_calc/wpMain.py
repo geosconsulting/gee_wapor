@@ -66,7 +66,6 @@ def main(args=None):
                         default=None)
 
     parser.add_argument('-s', '--arealstat',
-                        # type=basestring,
                         help="Zonal statistics form a WaterProductivity layer generated on the fly in GEE for the chosen country")
 
     parser.add_argument("-v", "--verbose",
@@ -100,7 +99,7 @@ def main(args=None):
 
         master = Tk()
 
-        media = elaborazione.generate_arealstats(results.arealstat, WPbm)
+        media = elaborazione.generate_areal_stats(results.arealstat, WPbm)
         messaggio = "Mean for {} in {} between {} and {} is {}".format(results.arealstat,
                                                                        'Water productivity',
                                                                        str(results.dekadal[0]),
