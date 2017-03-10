@@ -62,10 +62,10 @@ class L1WaterProductivity(WaterProductivityCalc):
         data_start = str(valori_filtro[1])
         data_end = str(valori_filtro[2])
 
-        coll_n_p_p_filtered = self._L1_AGBP_DEKADAL.filterDate(
+        coll_npp_filtered = self._L1_NPP_DEKADAL.filterDate(
             data_start,
             data_end)
-        coll_n_p_p_multiplied = coll_n_p_p_filtered.map(lambda immagini: immagini.multiply(valori_filtro[0]))
+        coll_n_p_p_multiplied = coll_npp_filtered.map(lambda immagini: immagini.multiply(valori_filtro[0]))
 
         self.l1_NPP250_calc = coll_n_p_p_multiplied
 
@@ -282,9 +282,10 @@ class L1WaterProductivity(WaterProductivityCalc):
                     'region': cut}
 
                 if exp_type == 'u':
+                    lista_url = []
                     try:
                         url_WPbm = WPbm.getDownloadUrl(Export_WPbm)
-                        print(url_WPbm)
+                        lista_url.append(url_WPbm)
                     except:
                         print("Unexpected error:", sys.exc_info()[0])
                         raise
