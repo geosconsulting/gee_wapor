@@ -2,6 +2,7 @@ import argparse
 import datetime
 from Tkinter import *
 
+
 from wpCalc import L1WaterProductivity
 
 
@@ -123,5 +124,4 @@ def main(args=None):
     elaborazione.image_export(results.export, WPbm)
 
 if __name__ == '__main__':
-    # python wpMain.py -d 2015-1-1 2015-5-30 -s 'Kenya' -t 'eta'
     main()
